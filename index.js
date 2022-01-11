@@ -40,7 +40,11 @@ const download = (url, path, callback) => {
         })).on('close', callback);
     });
 };
-
+const express = require("express");
+const app = express();
+app.listen(process.env.PORT, () => {
+    console.log(`App is running on port ${process.env.PORT}`);
+})
 
 bot.onText(/\/phone_no/, (msg, match) => {
     const chatId = msg.chat.id;
