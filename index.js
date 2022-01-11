@@ -78,6 +78,15 @@ bot.onText(/മാസവരി/, (msg, match) => {
 
 })
 
+bot.onText(/അരിയർ/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
+    // send back the matched "whatever" to the chat
+    paymentState[chatId] = true;
+    bot.sendMessage(chatId, resp);
+
+})
+
 // Listen for any kind of message. There are different kinds of
 // messages.
 bot.on('message', async (msg) => {
@@ -112,7 +121,7 @@ bot.on('message', async (msg) => {
             }
 
         } else {
-            if (msg.text !== '/pay' && msg.text !== '/phone_no' && msg.text != 'മാസവരി' && !msg.photo) {
+            if (msg.text !== '/pay' && msg.text !== '/phone_no' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && !msg.photo) {
                 let user = await User.findOne({ chatId: chatId })
                 if (user) {
                     let resp = `കുമ്പാരി ${user.name}.. രസീത് അപ്‌ലോഡ് ചെയ്യാനാണേൽ  ഇടതു വശത്തു കാണുന്ന മെനുവിൽ രണ്ടാമത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ് `
