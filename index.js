@@ -74,7 +74,7 @@ bot.onText(/മാസവരി/, (msg, match) => {
     const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
     // send back the matched "whatever" to the chat
     paymentState[chatId] = true;
-    bot.sendMessage(chatId, resp);
+    bot.sendMessage(chatId, resp, { reply_markup: { remove_keyboard: true } });
 
 })
 
@@ -83,7 +83,7 @@ bot.onText(/അരിയർ/, (msg, match) => {
     const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
     // send back the matched "whatever" to the chat
     paymentState[chatId] = true;
-    bot.sendMessage(chatId, resp);
+    bot.sendMessage(chatId, resp, { reply_markup: { remove_keyboard: true } });
 
 })
 
@@ -124,10 +124,10 @@ bot.on('message', async (msg) => {
             if (msg.text !== '/pay' && msg.text !== '/phone_no' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && !msg.photo) {
                 let user = await User.findOne({ chatId: chatId })
                 if (user) {
-                    let resp = `കുമ്പാരി ${user.name}.. രസീത് അപ്‌ലോഡ് ചെയ്യാനാണേൽ  ഇടതു വശത്തു കാണുന്ന മെനുവിൽ രണ്ടാമത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ് `
+                    let resp = ` ${user.name}.. രസീത് അപ്‌ലോഡ് ചെയ്യാനാണേൽ  ഇടതു വശത്തു കാണുന്ന മെനുവിൽ രണ്ടാമത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ് `
                     bot.sendMessage(chatId, resp);
                 } else {
-                    let resp = `കുമ്പാരി ആളെ മനസിലായില്ല .. മൊബൈൽ നമ്പർ ഒന്ന് അപ്ഡേറ്റ് ചെയ് .  മെനുവിലെ ആദ്യത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ്താൽ മതി `
+                    let resp = `ആളെ മനസിലായില്ല .. മൊബൈൽ നമ്പർ ഒന്ന് അപ്ഡേറ്റ് ചെയ് .  മെനുവിലെ ആദ്യത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ്താൽ മതി `
                     bot.sendMessage(chatId, resp);
                 }
             }
