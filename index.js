@@ -2,17 +2,24 @@ const TelegramBot = require('node-telegram-bot-api');
 const phoneNoState = {};
 const paymentState = {};
 const paymentAmountState = {};
+const eventStatus = {};
+const eventDate = {};
+const moment = require('moment');
+
+const noticeState = {};
 const dotenv = require("dotenv").config({});
 const mongoose = require("mongoose");
 // replace the value below with the Telegram token you receive from @BotFather
 //const token = process.env.BOT_TOKEN;
 const token = '5053585305:AAGsrcn1D96oPA4KUQ2IgXI19TMqT92R03A';
+//const token = '5043568396:AAGyAG_L-k3ek4lYR7qW1sD1Z_CXICd77i0';
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
 const request = require('request');
 require('dotenv').config();
 const path = require('path');
 const fetch = require('node-fetch');
+const Event = require('./events');
 
 // this is used to download the file from the link
 
@@ -44,6 +51,45 @@ const express = require("express");
 const app = express();
 app.listen(process.env.PORT, () => {
     console.log(`App is running on port ${process.env.PORT}`);
+})
+
+function convertToISO(dt) {
+
+    darr = dt.split("-");    // ["29", "1", "2016"]
+    var dobj = new Date(parseInt(darr[2]), parseInt(darr[1]) - 1, parseInt(darr[0]));
+    console.log(dobj.toISOString());
+    return dobj.toISOString();
+    //2016-01-28T18:30:00.000Z
+}
+//bot.sendInvoice()
+
+function validateDate(dt) {
+    /* var date_regex = /^(0[1-9]|1[0-2])\/(0[1-9]|1\d|2\d|3[01])\/(19|20)\d{2}$/;
+     console.log(testDate)
+     console.log(date_regex.test(testDate))
+     if (!(date_regex.test(testDate))) {
+         return false;
+     }*/
+    // var reGoodDate = /^((0?[1-9]|1[012])[- /.](0?[1-9]|[12][0-9]|3[01])[- /.](19|20)?[0-9]{2})*$/;
+    var reGoodDate = /^(?:(0[1-9]|[12][0-9]|3[01])[\-.](0[1-9]|1[012])[\-.](19|20)[0-9]{2})$/;
+
+    return reGoodDate.test(dt);
+}
+
+bot.onText(/\/events/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const resp = "നിങ്ങളുടെ ഇവന്റ് നടക്കുന്ന തിയതി ടൈപ്പ് ചെയ്യുക .  തിയതി. DD-MM-YYYY എന്ന ഫോർമാറ്റിൽ ആയിരിക്കാൻ ശ്രദ്ധിക്കണം . ഉദാഹരണം . നിങ്ങളുടെ ഇവന്റ് നടക്കുന്നത്   ഡിസംബർ  8 , 2022 നാണെങ്കിൽ ,   തിയതി.  8-12-2022 എന്ന് ടൈപ്പ് ചെയ്യുക . "
+    // send back the matched "whatever" to the chat
+    eventStatus[chatId] = true;
+    bot.sendMessage(chatId, resp);
+})
+
+bot.onText(/\/notice/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const resp = "നിങ്ങൾക് ചൈതന്യ മെമ്പേഴ്സിനോട് പറയാനുള്ള അറിയിപ് എന്താണെന്നു ടൈപ്പ് ചെയ്യുക . "
+    // send back the matched "whatever" to the chat
+    noticeState[chatId] = true;
+    bot.sendMessage(chatId, resp);
 })
 
 bot.onText(/\/phone_no/, (msg, match) => {
@@ -120,8 +166,41 @@ bot.on('message', async (msg) => {
 
             }
 
-        } else {
-            if (msg.text !== '/pay' && msg.text !== '/phone_no' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && !msg.photo) {
+        } else if (noticeState[chatId]) {
+            let userList = await User.find({ "chatId": { "$ne": chatId } })
+            delete noticeState[chatId]
+            userList.forEach((item) => {
+                bot.sendMessage(item.chatId, msg.text);
+            })
+        } else if (eventStatus[chatId]) {
+            console.log(eventDate);
+            if (eventDate[chatId]) {
+                const event = new Event({
+                    chatId: chatId,
+                    eventDate: convertToISO(eventDate[chatId]),
+                    eventText: msg.text
+                })
+                await event.save();
+                let resp = `നിങ്ങളുടെ അറിയിപ് എല്ലാവരെയും അറിയിച്ചിട്ടുണ്ട്.  നിങ്ങളുടെ ഇവന്റ് നടക്കുന്ന ദിവസം എല്ലാവരെയും ഞാൻ ഒന്ന് കൂടി ഓര്മ പെടുത്താം . നിങ്ങളുടെ ഇവന്റിന് എല്ലാ വിധ ആശംസകളും അറിയിച്ചു കൊള്ളുന്നു. `
+                bot.sendMessage(chatId, resp);
+                delete eventStatus[chatId]
+                delete eventDate[chatId]
+
+                let userList = await User.find({ "chatId": { "$ne": chatId } })
+                userList.forEach((item) => {
+                    bot.sendMessage(item.chatId, msg.text);
+                })
+            } else if (validateDate(msg.text)) {
+                eventDate[chatId] = msg.text;
+                let resp = `നിങ്ങളുടെ അറിയിപ് ടൈപ്പ് ചെയ്യുക . `
+                bot.sendMessage(chatId, resp);
+            } else {
+                let resp = `നിങ്ങൾ ടൈപ്പ് ചെയ്ത തിയതി കറക്റ്റ് അല്ല.  തിയതി. DD-MM-YYYY എന്ന ഫോർമാറ്റിൽ ആയിരിക്കാൻ ശ്രദ്ധിക്കണം . ഉദാഹരണം . നിങ്ങളുടെ ഇവന്റ് നടക്കുന്നത്   ഡിസംബർ  8 , 2022 നാണെങ്കിൽ ,   തിയതി.  8-12-2022 എന്ന് ടൈപ്പ് ചെയ്യുക . `
+                bot.sendMessage(chatId, resp);
+            }
+        }
+        else {
+            if (msg.text !== '/pay' && msg.text !== '/phone_no' && msg.text !== '/notice' && msg.text !== '/events' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && !msg.photo) {
                 let user = await User.findOne({ chatId: chatId })
                 if (user) {
                     let resp = ` ${user.name}.. രസീത് അപ്‌ലോഡ് ചെയ്യാനാണേൽ  ഇടതു വശത്തു കാണുന്ന മെനുവിൽ രണ്ടാമത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ് `
@@ -185,60 +264,3 @@ bot.on('photo', async (doc) => {
 
 
 });
-
-/*
-
-
-const { Telegraf } = require("telegraf");
-const dotenv = require("dotenv").config({});
-const token = `5053585305:AAGsrcn1D96oPA4KUQ2IgXI19TMqT92R03A`
-const bot = new Telegraf(token);
-
-bot.start(ctx => {
-    ctx.reply(
-        `Welcome to ${ctx.from.first_name}`
-    );
-});
-
-
-
-
-bot.startPolling();
-
-/*const express = require("express")
-const dotenv = require("dotenv").config({});
-const bodyParser = require("body-parser")
-const axios = require("axios");
-
-const app = express();
-
-
-
-app.use(bodyParser.json());
-const port = process.env.PORT;
-const { TOKEN, SERVER_URL } = process.env
-const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`
-const URI = `/webhook/${TOKEN}`
-const WEBHOOK_URL = SERVER_URL + URI
-const init = async () => {
-    const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`)
-    console.log(res.data)
-}
-
-app.post(URI, async (req, res) => {
-    console.log(req.body)
-
-    const chatId = req.body.message.chat.id
-    const text = req.body.message.text
-
-    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-        chat_id: chatId,
-        text: text
-    })
-    return res.send()
-})
-
-app.listen(port, async () => {
-    console.log(`Server is listening on port ${port}`);
-    await init()
-})*/
