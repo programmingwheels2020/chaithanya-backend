@@ -76,10 +76,19 @@ function validateDate(dt) {
     return reGoodDate.test(dt);
 }
 
+function clearStatus() {
+    delete phoneNoState[chatId]
+    delete paymentState[chatId]
+    delete paymentAmountState[chatId]
+    delete eventStatus[chatId]
+    delete eventDate[chatId]
+}
+
 bot.onText(/\/events/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങളുടെ ഇവന്റ് നടക്കുന്ന തിയതി ടൈപ്പ് ചെയ്യുക .  തിയതി. DD-MM-YYYY എന്ന ഫോർമാറ്റിൽ ആയിരിക്കാൻ ശ്രദ്ധിക്കണം . ഉദാഹരണം . നിങ്ങളുടെ ഇവന്റ് നടക്കുന്നത്   ഡിസംബർ  8 , 2022 നാണെങ്കിൽ ,   തിയതി.  8-12-2022 എന്ന് ടൈപ്പ് ചെയ്യുക . "
     // send back the matched "whatever" to the chat
+    clearStatus();
     eventStatus[chatId] = true;
     bot.sendMessage(chatId, resp);
 })
@@ -88,6 +97,7 @@ bot.onText(/\/notice/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങൾക് ചൈതന്യ മെമ്പേഴ്സിനോട് പറയാനുള്ള അറിയിപ് എന്താണെന്നു ടൈപ്പ് ചെയ്യുക . "
     // send back the matched "whatever" to the chat
+    clearStatus();
     noticeState[chatId] = true;
     bot.sendMessage(chatId, resp);
 })
@@ -96,6 +106,7 @@ bot.onText(/\/phone_no/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങളുടെ മൊബൈൽ നമ്പർ(ISD കോഡ് ഉൾപ്പടെ ) ടൈപ്പ് ചെയ്യുക. ഉദാഹരണം  +919874112233 "
     // send back the matched "whatever" to the chat
+    clearStatus();
     phoneNoState[chatId] = true;
     /*bucket.openDownloadStreamByName("AgACAgUAAxkBAAIBCWHdhcbV5zJrmVCmN68OriVuNgXbAALWsDEb_k3pVjgeWD3Al--iAQADAgADeQADIwQ.jpg").
         pipe(fs.createWriteStream('./outputFile.jpg'));*/
@@ -105,6 +116,7 @@ bot.onText(/\/phone_no/, (msg, match) => {
 bot.onText(/\/pay/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
+    clearStatus();
     // send back the matched "whatever" to the chat
     //paymentState[chatId] = true;
     //bot.sendMessage(chatId, resp);
