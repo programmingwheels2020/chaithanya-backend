@@ -76,19 +76,20 @@ function validateDate(dt) {
     return reGoodDate.test(dt);
 }
 
-function clearStatus() {
-    delete phoneNoState[chatId]
-    delete paymentState[chatId]
-    delete paymentAmountState[chatId]
-    delete eventStatus[chatId]
-    delete eventDate[chatId]
+function clearStatus(id) {
+
+    phoneNoState[id] && delete phoneNoState[id]
+    paymentState[id] && delete paymentState[id]
+    paymentAmountState[id] && delete paymentAmountState[id]
+    eventDate[id] && delete eventDate[id]
+    eventStatus[id] && delete eventStatus[id]
 }
 
 bot.onText(/\/events/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങളുടെ ഇവന്റ് നടക്കുന്ന തിയതി ടൈപ്പ് ചെയ്യുക .  തിയതി. DD-MM-YYYY എന്ന ഫോർമാറ്റിൽ ആയിരിക്കാൻ ശ്രദ്ധിക്കണം . ഉദാഹരണം . നിങ്ങളുടെ ഇവന്റ് നടക്കുന്നത്   ഡിസംബർ  8 , 2022 നാണെങ്കിൽ ,   തിയതി.  8-12-2022 എന്ന് ടൈപ്പ് ചെയ്യുക . "
     // send back the matched "whatever" to the chat
-    clearStatus();
+    clearStatus(chatId);
     eventStatus[chatId] = true;
     bot.sendMessage(chatId, resp);
 })
@@ -97,7 +98,7 @@ bot.onText(/\/notice/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങൾക് ചൈതന്യ മെമ്പേഴ്സിനോട് പറയാനുള്ള അറിയിപ് എന്താണെന്നു ടൈപ്പ് ചെയ്യുക . "
     // send back the matched "whatever" to the chat
-    clearStatus();
+    clearStatus(chatId);
     noticeState[chatId] = true;
     bot.sendMessage(chatId, resp);
 })
@@ -106,7 +107,7 @@ bot.onText(/\/phone_no/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങളുടെ മൊബൈൽ നമ്പർ(ISD കോഡ് ഉൾപ്പടെ ) ടൈപ്പ് ചെയ്യുക. ഉദാഹരണം  +919874112233 "
     // send back the matched "whatever" to the chat
-    clearStatus();
+    clearStatus(chatId);
     phoneNoState[chatId] = true;
     /*bucket.openDownloadStreamByName("AgACAgUAAxkBAAIBCWHdhcbV5zJrmVCmN68OriVuNgXbAALWsDEb_k3pVjgeWD3Al--iAQADAgADeQADIwQ.jpg").
         pipe(fs.createWriteStream('./outputFile.jpg'));*/
@@ -116,10 +117,10 @@ bot.onText(/\/phone_no/, (msg, match) => {
 bot.onText(/\/pay/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
-    clearStatus();
     // send back the matched "whatever" to the chat
     //paymentState[chatId] = true;
     //bot.sendMessage(chatId, resp);
+    clearStatus(chatId);
     bot.sendMessage(msg.chat.id, "മാസവരി ആണോ അതോ അരിയർ ആണോ ???", {
         "reply_markup": {
             "keyboard": [["മാസവരി"], ["അരിയർ"]]
@@ -151,7 +152,13 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
 
     try {
-        console.log(paymentState);
+        console.log(phoneNoState);
+        console.log("Hhhh")
+        const cmdList = ["/phone_no", "/pay", "/notice", "/events"]
+        console.log(msg.text)
+        if (cmdList.indexOf("msg.text") != -1) {
+            return;
+        }
         if (phoneNoState[chatId]) {
             let user = await User.findOne({ "phone": msg.text })
             if (user) {
@@ -181,8 +188,10 @@ bot.on('message', async (msg) => {
         } else if (noticeState[chatId]) {
             let userList = await User.find({ "chatId": { "$ne": chatId } })
             delete noticeState[chatId]
+
             userList.forEach((item) => {
                 bot.sendMessage(item.chatId, msg.text);
+                //bot.sendMessage(chatId, msg.text)
             })
         } else if (eventStatus[chatId]) {
             console.log(eventDate);
