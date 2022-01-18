@@ -188,10 +188,14 @@ bot.on('message', async (msg) => {
         } else if (noticeState[chatId]) {
             let userList = await User.find({ "chatId": { "$ne": chatId } })
             delete noticeState[chatId]
-
+            let sender = await User.findOne({ "chatId": chatId })
+            let respMsg = `നിങ്ങൾക് ${sender.name} നിന്നും ഒരു അറിയിപ്പുണ്ട് . 
+            ---------------------------------------
+            ${msg.text}
+            `
             userList.forEach((item) => {
-                bot.sendMessage(item.chatId, msg.text);
-                //bot.sendMessage(chatId, msg.text)
+                bot.sendMessage(item.chatId, respMsg);
+                //bot.sendMessage(chatId, respMsg);
             })
         } else if (eventStatus[chatId]) {
             console.log(eventDate);
