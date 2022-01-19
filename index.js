@@ -163,6 +163,7 @@ bot.on('message', async (msg) => {
             let user = await User.findOne({ "phone": msg.text })
             if (user) {
                 user.chatId = chatId;
+                user.activatedStatus = true;
                 await user.save();
                 delete phoneNoState[chatId]
                 let resp = `ഹായ്  ${user.name} , നിങ്ങളുടെ മൊബൈൽ നമ്പർ അപ്ഡേറ്റ് ആയിരിക്കുന്നതായി അറിയിക്കുന്നു .`
@@ -186,7 +187,7 @@ bot.on('message', async (msg) => {
             }
 
         } else if (noticeState[chatId]) {
-            let userList = await User.find({ "chatId": { "$ne": chatId } })
+            let userList = await User.find({ "chatId": { "$ne": chatId }, activatedStatus: true })
             delete noticeState[chatId]
             let sender = await User.findOne({ "chatId": chatId })
             let respMsg = `നിങ്ങൾക് ${sender.name} നിന്നും ഒരു അറിയിപ്പുണ്ട് . 
@@ -211,7 +212,7 @@ bot.on('message', async (msg) => {
                 delete eventStatus[chatId]
                 delete eventDate[chatId]
 
-                let userList = await User.find({ "chatId": { "$ne": chatId } })
+                let userList = await User.find({ "chatId": { "$ne": chatId }, activatedStatus: true })
                 userList.forEach((item) => {
                     bot.sendMessage(item.chatId, msg.text);
                 })
