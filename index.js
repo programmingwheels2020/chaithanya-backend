@@ -112,6 +112,7 @@ bot.onText(/\/events/, (msg, match) => {
 })
 
 bot.onText(/\/report/, async (msg, match) => {
+    clearStatus(chatId);
     const chatId = msg.chat.id;
     const resp = "ആരുടെ റിപ്പോർട്ട് ആണ് വേണ്ടത് എന്ന് സെലക്ട് ചെയ്യുക . "
     let userList = await User.find({}).sort({ "name": 1 });
