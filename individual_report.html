@@ -1,0 +1,118 @@
+<html>
+
+<head>
+    <style>
+        /* List */
+        .body {
+            padding: 25px;
+        }
+
+        table.errorlist .counter {
+            text-align: right;
+        }
+
+        table.errorlist .counter span {
+            background-color: #eee;
+            border-radius: 2px;
+            padding: 1px 5px;
+        }
+
+        /* Summaries*/
+        table.summaries td {
+            padding-right: 40px;
+        }
+
+        table.summaries td.critical {
+            color: #e6614f;
+        }
+
+        table.summaries div.value {
+            font-size: 40px;
+            margin-top: 10px;
+        }
+
+        /* Bar Chart */
+        .minwidth {
+            margin-top: 50px;
+        }
+
+        .barchart {
+            font-size: 15px;
+            line-height: 15px;
+            table-layout: fixed;
+            text-align: center;
+            width: 100%;
+            height: 226px;
+        }
+
+        .barchart tr:nth-child(1) td {
+            vertical-align: bottom;
+            height: 200px;
+        }
+
+        .barchart .bar {
+            background: #0DA58E;
+            padding: 10px 2px 0;
+        }
+
+        .barchart .label {
+            background-color: black;
+            margin-top: -30px;
+            padding: 0 3px;
+            color: white;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+
+        <h2>Daily summary for $name</h2>
+
+        <table class="summaries">
+            <tr>
+                <td>
+                    <div class="label">അരിയർ</div>
+                    <div class="value" mc:edit="total">$arrier</div>
+                </td>
+                <td class="critical">
+                    <div class="label">ആകെ മാസവരി (2022)</div>
+                    <div class="value" mc:edit="critical">$totalLevy</div>
+                </td>
+                <td>
+                    <div class="label">Complaince Percentage</div>
+                    <div class="value" mc:edit="unique">$complaince%</div>
+                </td>
+            </tr>
+        </table>
+
+        <br />
+        <div class="minwidth">
+            <table class="barchart" cellpadding="1" cellspacing="0">
+                <tr>
+                    $chartData
+                </tr>
+                <tr>
+                    <td>January</td>
+                    <td>February</td>
+                    <td>March</td>
+                    <td>April</td>
+                    <td>May</td>
+                    <td>June</td>
+                    <td>July</td>
+                    <td>Augast</td>
+                    <td>September</td>
+                    <td>October</td>
+                    <td>November</td>
+                    <td>December</td>
+                </tr>
+            </table>
+        </div>
+
+        <br />
+
+    </div>
+</body>
+
+</html>

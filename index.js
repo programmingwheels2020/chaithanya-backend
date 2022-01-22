@@ -4,7 +4,10 @@ const paymentState = {};
 const paymentAmountState = {};
 const eventStatus = {};
 const eventDate = {};
+const feeType = {};
 const moment = require('moment');
+const bodyParser = require("body-parser");
+const { InlineKeyboard, ReplyKeyboard, ForceReply, Row, KeyboardButton, InlineKeyboardButton } = require("node-telegram-keyboard-wrapper");
 
 const noticeState = {};
 const dotenv = require("dotenv").config({});
@@ -20,6 +23,7 @@ require('dotenv').config();
 const path = require('path');
 const fetch = require('node-fetch');
 const Event = require('./events');
+const FeeType = require("./feetypes");
 
 // this is used to download the file from the link
 
@@ -48,10 +52,23 @@ const download = (url, path, callback) => {
     });
 };
 const express = require("express");
+const { Login } = require('./controllers');
+const callbackQuery = require('./callbackquery');
 const app = express();
+
+app.use(bodyParser.json());
+
+app.get("/get-file/:fileName", (req, res) => {
+    bucket.openDownloadStreamByName(req.params.fileName).
+        pipe(res);
+})
+
+app.post("/login", Login)
 app.listen(process.env.PORT, () => {
     console.log(`App is running on port ${process.env.PORT}`);
 })
+
+
 
 function convertToISO(dt) {
 
@@ -94,6 +111,50 @@ bot.onText(/\/events/, (msg, match) => {
     bot.sendMessage(chatId, resp);
 })
 
+bot.onText(/\/report/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const resp = "ആരുടെ റിപ്പോർട്ട് ആണ് വേണ്ടത് എന്ന് സെലക്ട് ചെയ്യുക . "
+    let userList = await User.find({}).sort({ "name": 1 });
+    const inlineKeyboard = new InlineKeyboard();
+    for (let i = 0; i < userList.length; i++) {
+        if (i % 2 == 0 && i < userList.length - 1) {
+            let myRow = new Row(
+                new InlineKeyboardButton(userList[i].name, "callback_data", `report_${userList[i]._id}`),
+                new InlineKeyboardButton(userList[i + 1].name, "callback_data", `report_${userList[i + 1]._id}`),
+                // new InlineKeyboardButton(userList[i + 2].name, "callback_data", `report_${userList[i + 2]._id}`),
+            )
+            inlineKeyboard.push(myRow);
+        }
+        if (i == userList.length - 1) {
+            let lastRow = new Row(
+                new InlineKeyboardButton(userList[i].name, "callback_data", `report_${userList[i]._id}`)
+            )
+            inlineKeyboard.push(lastRow);
+        }
+
+
+    }
+    const options = {
+        reply_markup: inlineKeyboard.getMarkup()
+    }
+
+    //bot.sendMessage(msg.from.id, "This is a message with an inline keyboard.", options);
+    bot.sendMessage(chatId, resp, options);
+})
+
+callbackQuery(bot);
+/*
+bot.on("callback_query", async (query) => {
+    console.log(query);
+    await bot.answerCallbackQuery(query.id, { text: "Action received!" })
+    await bot.sendMessage(query.from.id, "Hey there! You clicked on an inline button! ;) So, as you saw, the support library works!");
+});*/
+
+bot.on("error", (err) => {
+    console.log(err.message);
+})
+bot.on("polling_error", (err) => console.log(err));
+
 bot.onText(/\/notice/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങൾക് ചൈതന്യ മെമ്പേഴ്സിനോട് പറയാനുള്ള അറിയിപ് എന്താണെന്നു ടൈപ്പ് ചെയ്യുക . "
@@ -101,6 +162,7 @@ bot.onText(/\/notice/, (msg, match) => {
     clearStatus(chatId);
     noticeState[chatId] = true;
     bot.sendMessage(chatId, resp);
+    //bot.sendPhoto
 })
 
 bot.onText(/\/phone_no/, (msg, match) => {
@@ -114,18 +176,30 @@ bot.onText(/\/phone_no/, (msg, match) => {
     bot.sendMessage(chatId, resp);
 });
 
-bot.onText(/\/pay/, (msg, match) => {
+bot.onText(/\/pay/, async (msg, match) => {
     const chatId = msg.chat.id;
     const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
     // send back the matched "whatever" to the chat
     //paymentState[chatId] = true;
     //bot.sendMessage(chatId, resp);
     clearStatus(chatId);
-    bot.sendMessage(msg.chat.id, "മാസവരി ആണോ അതോ അരിയർ ആണോ ???", {
-        "reply_markup": {
-            "keyboard": [["മാസവരി"], ["അരിയർ"]]
-        }
-    });
+    try {
+        const feeTypes = await FeeType.find({});
+        let types = [];
+        feeTypes.forEach(item => {
+            types.push([item.name]);
+        })
+        console.log(types);
+        bot.sendMessage(msg.chat.id, "മാസവരി ആണോ അതോ അരിയർ ആണോ ???", {
+            "reply_markup": {
+                //"keyboard": [["മാസവരി"], ["അരിയർ"]]
+                "keyboard": types
+            }
+        });
+    } catch (err) {
+        console.error(err);
+    }
+
 })
 
 bot.onText(/മാസവരി/, (msg, match) => {
@@ -133,6 +207,7 @@ bot.onText(/മാസവരി/, (msg, match) => {
     const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
     // send back the matched "whatever" to the chat
     paymentState[chatId] = true;
+    feeType[chatId] = 1
     bot.sendMessage(chatId, resp, { reply_markup: { remove_keyboard: true } });
 
 })
@@ -142,6 +217,26 @@ bot.onText(/അരിയർ/, (msg, match) => {
     const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
     // send back the matched "whatever" to the chat
     paymentState[chatId] = true;
+    feeType[chatId] = 2
+    bot.sendMessage(chatId, resp, { reply_markup: { remove_keyboard: true } });
+
+})
+bot.onText(/ടെന്റ്ഫണ്ട്/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
+    // send back the matched "whatever" to the chat
+    paymentState[chatId] = true;
+    feeType[chatId] = 3
+    bot.sendMessage(chatId, resp, { reply_markup: { remove_keyboard: true } });
+
+})
+
+bot.onText(/ജേഴ്‌സി/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const resp = `നിങ്ങൾ അയച്ച പൈസ എത്ര ആണെന്ന് ടൈപ്പ് ചെയ്യുക`
+    // send back the matched "whatever" to the chat
+    paymentState[chatId] = true;
+    feeType[chatId] = 4
     bot.sendMessage(chatId, resp, { reply_markup: { remove_keyboard: true } });
 
 })
@@ -226,7 +321,7 @@ bot.on('message', async (msg) => {
             }
         }
         else {
-            if (msg.text !== '/pay' && msg.text !== '/phone_no' && msg.text !== '/notice' && msg.text !== '/events' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && !msg.photo) {
+            if (msg.text !== '/pay' && msg.text !== '/report' && msg.text !== '/phone_no' && msg.text !== '/notice' && msg.text !== '/events' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && msg.text != 'ടെന്റ്ഫണ്ട്' && msg.text != 'ജേഴ്‌സി' && !msg.photo) {
                 let user = await User.findOne({ chatId: chatId })
                 if (user) {
                     let resp = ` ${user.name}.. രസീത് അപ്‌ലോഡ് ചെയ്യാനാണേൽ  ഇടതു വശത്തു കാണുന്ന മെനുവിൽ രണ്ടാമത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ് `
@@ -273,7 +368,8 @@ bot.on('photo', async (doc) => {
                 userId: user.id,
                 fileName: `${fileId}.jpg`,
                 chatId: chatId,
-                amount: paymentAmountState[chatId]
+                amount: paymentAmountState[chatId],
+                feeType: feeType[chatId]
             })
             await payment.save();
             download(downloadURL, `${fileId}.jpg`, () => {
