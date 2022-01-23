@@ -31,9 +31,10 @@ const createReportImage = (imageName, totalLevy, totalArrier, userName) => {
     let noOfMonths = Math.ceil(totalLevy / 300);
     for (i = 0; i < noOfMonths; i++) {
         if (i == noOfMonths - 1) {
+            let lev = totalLevy % 300 == 0 ? 300 : totalLevy % 300
             barData += `<td>
-                        <span class="label">${totalLevy % 300}</span>
-                        <div class="bar" style="height:${Math.round((totalLevy % 300) / 300 * 100)}%"></div>
+                        <span class="label">${lev}</span>
+                        <div class="bar" style="height:${Math.round(lev / 300 * 100)}%"></div>
                     </td>`
         } else {
             barData += `<td>
