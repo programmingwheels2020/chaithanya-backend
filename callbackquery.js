@@ -4,6 +4,25 @@ const mongoose = require("mongoose");
 const nodeHtmlToImage = require('node-html-to-image');
 const Payment = require("./payments");
 
+const getImageBuffer = (fileName, bucket) => {
+    let data = "";
+    return new Promise((resolve, reject) => {
+        const readStream = bucket.openDownloadStreamByName(fileName)
+        readStream.setEncoding('binary')
+        readStream.once('error', err => {
+            return cb(err)
+        })
+        readStream.on("data", (chunk) => {
+            data += chunk
+        })
+        readStream.on("end", () => {
+            return resolve(Buffer.from(data, 'binary'))
+
+        })
+    })
+
+}
+
 const CalculateTotalLevy = (year, userId) => {
     console.log(new Date(year, 7, 1));
     console.log(userId);
@@ -93,7 +112,7 @@ const getTypeOfPayment = (no) => {
             break;
     }
 }
-const callbackQuery = async (bot) => {
+const callbackQuery = async (bot, bucket) => {
     bot.on("callback_query", async (query) => {
         console.log("----------")
         //console.log(query);
@@ -126,9 +145,10 @@ const callbackQuery = async (bot) => {
                 resp = `നിങ്ങൾ അയച്ച  ${payment.amount} രൂപ,   ട്രഷറി  ${getTypeOfPayment(payment.feeType)} ലേക്  വരവ് വച്ചതായി അറിയിക്കുന്നു. നന്ദി . കൂടുതൽ വിവരങ്ങൾക് മാസവാരി റിപ്പോർട്ട് നോക്കുക .   `
             }
             await bot.sendMessage(payment.chatId, resp);
-            let url = `http://104.211.13.180:3000/get-file/${payment.fileName}`
+            //let url = `http://104.211.13.180:3000/get-file/${payment.fileName}`
             //let url = `https://media.gettyimages.com/photos/lionel-messi-of-argentina-poses-for-a-portrait-during-the-official-picture-id972635442?s=612x612`
-            await bot.sendPhoto(payment.chatId, url);
+            let buf = await getImageBuffer(payment.fileName, bucket)
+            await bot.sendPhoto(payment.chatId, buf);
         }
 
     });

@@ -42,7 +42,6 @@ const client = new MongoClient(process.env.MONGO_URI);
 const db = client.db("chaithanyadb");
 const bucket = new GridFSBucket(db);
 client.connect();
-
 const download = (url, path, callback) => {
     request.head(url, (err, res, body) => {
         request(url).pipe(bucket.openUploadStream(path, {
@@ -70,6 +69,25 @@ app.get("/get-file/:fileName", (req, res) => {
     bucket.openDownloadStreamByName(req.params.fileName).
         pipe(res);
 })
+
+const getImageBuffer = (fileName) => {
+    let data = "";
+    return new Promise((resolve, reject) => {
+        const readStream = bucket.openDownloadStreamByName(fileName)
+        readStream.setEncoding('binary')
+        readStream.once('error', err => {
+            return cb(err)
+        })
+        readStream.on("data", (chunk) => {
+            data += chunk
+        })
+        readStream.on("end", () => {
+            return resolve(Buffer.from(data, 'binary'))
+
+        })
+    })
+
+}
 
 app.post("/login", Login)
 app.listen(process.env.PORT, () => {
@@ -181,9 +199,11 @@ bot.onText(/\/pending_rp/, async (msg, match) => {
         for (let paym of paymentList) {
             let resp = `-------------------------`
             await bot.sendMessage(chatId, resp)
-            let url = `http://104.211.13.180:3000/get-file/${paym.fileName}`
+            //let url = `http://104.211.13.180:3000/get-file/${paym.fileName}`
+
             //let url = `https://media.gettyimages.com/photos/lionel-messi-of-argentina-poses-for-a-portrait-during-the-official-picture-id972635442?s=612x612`
-            await bot.sendPhoto(chatId, url);
+            let buf = await getImageBuffer(paym.fileName);
+            await bot.sendPhoto(chatId, buf);
             let userDetails = await User.findById(paym.userId);
             resp = `Payment Details ---
                Type: ${getTypeOfPayment(paym.feeType)},
@@ -213,7 +233,7 @@ bot.onText(/\/pending_rp/, async (msg, match) => {
 
 )
 
-callbackQuery(bot);
+callbackQuery(bot, bucket);
 /*
 bot.on("callback_query", async (query) => {
     console.log(query);
@@ -453,3 +473,5 @@ bot.on('photo', async (doc) => {
 
 
 });
+
+module.exports = bucket
