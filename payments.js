@@ -6,7 +6,7 @@ const PaymentSchema = new mongoose.Schema({
     chatId: { type: Number },
     amount: { type: Number, required: true },
     feeType: { type: Number },
-    approveStatus: { type: Boolean, default: false }
+    approveStatus: { type: Number, default: 0 }
 }, { timestamps: true })
 
 module.exports = mongoose.model("Payment", PaymentSchema);

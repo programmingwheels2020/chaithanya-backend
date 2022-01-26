@@ -51,6 +51,14 @@ const download = (url, path, callback) => {
         })).on('close', callback);
     });
 };
+
+const downloadPromisfy = (url, path) => {
+    return new Promise((resolve, reject) => {
+        download(url, path, () => {
+            return resolve();
+        })
+    })
+}
 const express = require("express");
 const { Login } = require('./controllers');
 const callbackQuery = require('./callbackquery');
@@ -102,6 +110,8 @@ function clearStatus(id) {
     eventStatus[id] && delete eventStatus[id]
 }
 
+
+
 bot.onText(/\/events/, (msg, match) => {
     const chatId = msg.chat.id;
     const resp = "നിങ്ങളുടെ ഇവന്റ് നടക്കുന്ന തിയതി ടൈപ്പ് ചെയ്യുക .  തിയതി. DD-MM-YYYY എന്ന ഫോർമാറ്റിൽ ആയിരിക്കാൻ ശ്രദ്ധിക്കണം . ഉദാഹരണം . നിങ്ങളുടെ ഇവന്റ് നടക്കുന്നത്   ഡിസംബർ  8 , 2022 നാണെങ്കിൽ ,   തിയതി.  8-12-2022 എന്ന് ടൈപ്പ് ചെയ്യുക . "
@@ -143,6 +153,65 @@ bot.onText(/\/report/, async (msg, match) => {
     //bot.sendMessage(msg.from.id, "This is a message with an inline keyboard.", options);
     bot.sendMessage(chatId, resp, options);
 })
+const getTypeOfPayment = (no) => {
+    switch (no) {
+        case 1:
+            return "മാസവരി";
+            break;
+        case 2:
+            return "അരിയർ";
+            break;
+        case 3:
+            return "ടെന്റ്ഫണ്ട്";
+            break;
+        case 4:
+            return "ജേഴ്‌സി";
+            break;
+        default:
+            return "മാസവരി"
+            break;
+    }
+}
+bot.onText(/\/pending_rp/, async (msg, match) => {
+
+    const chatId = msg.chat.id;
+    clearStatus(chatId);
+    try {
+        let paymentList = await Payment.find({ approveStatus: 0 });
+        for (let paym of paymentList) {
+            let resp = `-------------------------`
+            await bot.sendMessage(chatId, resp)
+            let url = `http://104.211.13.180:3000/get-file/${paym.fileName}`
+            //let url = `https://media.gettyimages.com/photos/lionel-messi-of-argentina-poses-for-a-portrait-during-the-official-picture-id972635442?s=612x612`
+            await bot.sendPhoto(chatId, url);
+            let userDetails = await User.findById(paym.userId);
+            resp = `Payment Details ---
+               Type: ${getTypeOfPayment(paym.feeType)},
+               Amount : ${paym.amount},
+               Member : ${userDetails.name},
+               DateOfPayment : ${paym.createdAt}
+            `
+            const inlineKeyboard = new InlineKeyboard();
+            let myRow = new Row(
+                new InlineKeyboardButton("Approve", "callback_data", `payment_approve_${paym._id}`),
+                new InlineKeyboardButton("Reject", "callback_data", `payment_reject_${paym._id}`),
+                // new InlineKeyboardButton(userList[i + 2].name, "callback_data", `report_${userList[i + 2]._id}`),
+            )
+            inlineKeyboard.push(myRow);
+            const options = {
+                reply_markup: inlineKeyboard.getMarkup()
+            }
+
+            //bot.sendMessage(msg.from.id, "This is a message with an inline keyboard.", options);
+            await bot.sendMessage(chatId, resp, options);
+        }
+    } catch (err) {
+        console.log(err.message);
+    }
+
+}
+
+)
 
 callbackQuery(bot);
 /*
@@ -249,9 +318,7 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
 
     try {
-        console.log(phoneNoState);
-        console.log("Hhhh")
-        const cmdList = ["/phone_no", "/pay", "/notice", "/events"]
+        const cmdList = ["/phone_no", "/pay", "/notice", "/events", "/report", "/pending_rp"]
         console.log(msg.text)
         if (cmdList.indexOf("msg.text") != -1) {
             return;
@@ -323,7 +390,7 @@ bot.on('message', async (msg) => {
             }
         }
         else {
-            if (msg.text !== '/pay' && msg.text !== '/report' && msg.text !== '/phone_no' && msg.text !== '/notice' && msg.text !== '/events' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && msg.text != 'ടെന്റ്ഫണ്ട്' && msg.text != 'ജേഴ്‌സി' && !msg.photo) {
+            if (msg.text !== '/pay' && msg.text !== '/report' && msg.text !== '/pending_rp' && msg.text !== '/phone_no' && msg.text !== '/notice' && msg.text !== '/events' && msg.text != 'മാസവരി' && msg.text != 'അരിയർ' && msg.text != 'ടെന്റ്ഫണ്ട്' && msg.text != 'ജേഴ്‌സി' && !msg.photo) {
                 let user = await User.findOne({ chatId: chatId })
                 if (user) {
                     let resp = ` ${user.name}.. രസീത് അപ്‌ലോഡ് ചെയ്യാനാണേൽ  ഇടതു വശത്തു കാണുന്ന മെനുവിൽ രണ്ടാമത്തെ ഓപ്ഷൻ ക്ലിക്ക് ചെയ് `
@@ -374,12 +441,10 @@ bot.on('photo', async (doc) => {
                 feeType: feeType[chatId]
             })
             await payment.save();
-            download(downloadURL, `${fileId}.jpg`, () => {
-                let resp = `നിങ്ങൾ വിജയകരമായി രസീത് അപ്‌ലോഡ് ചെയ്തിരിക്കുന്നു . വീണ്ടും കാണാം നന്ദി . `
-                bot.sendMessage(chatId, resp);
-            }
-
-            );
+            console.log("))))))))))))))))))))))))")
+            let result = await downloadPromisfy(downloadURL, `${fileId}.jpg`,);
+            let resp = `നിങ്ങൾ വിജയകരമായി രസീത് അപ്‌ലോഡ് ചെയ്തിരിക്കുന്നു . വീണ്ടും കാണാം നന്ദി . `
+            bot.sendMessage(chatId, resp);
 
         }
     } catch (err) {
