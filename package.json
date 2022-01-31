@@ -18,6 +18,7 @@
     "moment": "^2.29.1",
     "mongodb": "^4.3.0",
     "mongoose": "^6.1.5",
+    "node-cron": "^3.0.0",
     "node-fetch": "^2.6.1",
     "node-html-to-image": "^3.2.0",
     "node-telegram-bot-api": "^0.56.0",

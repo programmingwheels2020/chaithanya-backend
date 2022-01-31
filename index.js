@@ -65,6 +65,10 @@ const app = express();
 
 app.use(bodyParser.json());
 
+const cron = require('node-cron');
+const { sendLevyReminder } = require('./cronjobfn');
+
+
 app.get("/get-file/:fileName", (req, res) => {
     bucket.openDownloadStreamByName(req.params.fileName).
         pipe(res);
@@ -127,6 +131,14 @@ function clearStatus(id) {
     eventDate[id] && delete eventDate[id]
     eventStatus[id] && delete eventStatus[id]
 }
+/*
+cron.schedule('15 17 31 * *', () => {
+    sendLevyReminder(bot);
+});*/
+
+cron.schedule('15 17 1 * *', () => {
+    sendLevyReminder(bot);
+});
 
 
 
